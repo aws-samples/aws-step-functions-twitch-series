@@ -1,0 +1,4 @@
+{
+  "bucket": "TestBucketName_OUTPUT_FROM_SAM_TEMPLATE",
+  "prefix": "some_prefix"
+}

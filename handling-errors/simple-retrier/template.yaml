@@ -1,0 +1,69 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  simple-retrier
+  
+  A workflow that uses a jittery function to demonstrate a simple retrier.
+
+Resources:
+  JitteryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: jittery-function/
+      Handler: jittery-function
+      Runtime: go1.x
+
+  SimpleRetrierWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Simple-Retrier
+      RoleArn: !GetAtt SimpleRetrierRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "An example of the Amazon States Language with a simple Retry block",
+            "StartAt": "Jittery Function",
+            "States": {
+              "Jittery Function": {
+                "Type": "Task",
+                "Resource": "${JitteryFunctionArn}",
+                "Retry": [
+                  {
+                    "ErrorEquals": [ "errorString" ],
+                    "IntervalSeconds": 5,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0
+                  }
+                ],
+                "End": true
+              }
+            }
+          }
+        - {
+            "JitteryFunctionArn": !GetAtt JitteryFunction.Arn
+          }
+
+  SimpleRetrierRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: JitteryFunctionExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt JitteryFunction.Arn

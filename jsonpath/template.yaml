@@ -1,0 +1,28 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  jsonpath-lambda
+  
+  Sample SAM Template for jsonpath-lambda
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 5
+
+Resources:
+  JSONPathLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: jsonpath-lambda/
+      Handler: jsonpath-lambda
+      Runtime: go1.x
+      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+
+Outputs:
+  JSONPathLambdaFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt JSONPathLambdaFunction.Arn

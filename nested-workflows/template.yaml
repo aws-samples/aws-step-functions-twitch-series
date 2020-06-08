@@ -1,0 +1,200 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  nested-workflows
+  
+  SAM Template to demonstrate nested-workflows
+
+Resources:
+################################################################################
+# Parent Standard Workflow and IAM role
+################################################################################
+  ParentWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Parent-Workflow
+      RoleArn: !GetAtt ParentWorkflowRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "An example of the Amazon States Language using a parallel state to execute two branches at the same time.",
+            "StartAt": "Parallel",
+            "States": {
+              "Parallel": {
+                "Type": "Parallel",
+                "Next": "Final State",
+                "Branches": [
+                  {
+                    "StartAt": "Failing Child",
+                    "States": {
+                      "Failing Child": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                        "Parameters": {
+                          "StateMachineArn": "${FailingChildWorkflowArn}",
+                          "Name": "FailingChild",
+                          "Input": {
+                            "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                          }
+                        },
+                        "Retry": [
+                          {
+                            "ErrorEquals": [
+                              "States.TaskFailed"
+                            ],
+                            "IntervalSeconds": 20,
+                            "MaxAttempts": 2,
+                            "BackoffRate": 2.0
+                          }
+                        ],
+                        "Catch": [
+                          {
+                            "ErrorEquals": [
+                              "States.TaskFailed"
+                            ],
+                            "Next": "Task Failure Fallback"
+                          }
+                        ],
+                        "End": true
+                      },
+                      "Task Failure Fallback": {
+                        "Type": "Pass",
+                        "Parameters": {
+                          "ErrorObject.$": "$",
+                          "Message": "Child workflow failed; retry limit reached. See ErrorObject for additional information."
+                        },
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "Succeeding Child",
+                    "States": {
+                      "Succeeding Child": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+                        "Parameters": {
+                          "StateMachineArn": "${SucceedingChildWorkflowArn}",
+                          "Name": "SucceedingChild",
+                          "Input": {
+                            "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                          }
+                        },
+                        "End": true
+                      }
+                    }
+                  }
+                ]
+              },
+              "Final State": {
+                  "Type": "Pass",
+                  "End": true
+              }
+            }
+          }
+        - {
+            FailingChildWorkflowArn: !Ref FailingChildWorkflow,
+            SucceedingChildWorkflowArn: !Ref SucceedingChildWorkflow
+          }
+
+  ParentWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ParentWorkflowExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource:
+                  - !Ref FailingChildWorkflow
+                  - !Ref SucceedingChildWorkflow
+              # The following stanzas are required for .sync invocations of workflows
+              - Effect: Allow
+                Action:
+                  - states:DescribeExecution
+                  - states:StopExecution
+                Resource:
+                  - !Ref FailingChildWorkflow
+                  - !Ref SucceedingChildWorkflow
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DescribeRule
+                Resource:
+                  - !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/StepFunctionsGetEventsForStepFunctionsExecutionRule"
+
+################################################################################
+# Failing Child Express Workflow
+################################################################################
+
+  FailingChildWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Failing-Child-Workflow
+      StateMachineType: EXPRESS
+      RoleArn: !GetAtt ChildWorkflowRole.Arn
+      DefinitionString: >
+        {
+          "Comment": "A simple Express Workflow built to always fail",
+          "StartAt": "Failing Child",
+          "States": {
+            "Failing Child": {
+              "Type": "Fail",
+              "Cause": "ERROR.CHILD_FAILURE",
+              "Comment": "This Fail state is hard-coded to demonstrate nested workflow handling",
+              "Error": "Child.Failure"
+            }
+          }
+        }
+
+################################################################################
+# Succeeding Child Express Workflow
+################################################################################
+
+  SucceedingChildWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Succeeding-Child-Workflow
+      StateMachineType: EXPRESS
+      RoleArn: !GetAtt ChildWorkflowRole.Arn
+      DefinitionString: >
+        {
+          "Comment": "A simple Express Workflow built to always succeed",
+          "StartAt": "Succeeding Child",
+          "States": {
+            "Succeeding Child": {
+              "Type": "Succeed",
+              "Comment": "This Succeed state is hard-coded to demonstrate nested workflow handling"
+            }
+          }
+        }
+
+################################################################################
+# No-op IAM role for child workflows
+################################################################################
+  ChildWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole

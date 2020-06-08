@@ -1,0 +1,102 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  states-timeout
+  
+  A workflow that triggers the _States.Timeout_ error.
+
+Parameters:
+  TimeoutSeconds:
+    Description: The number of seconds after which the Task State will timeout. This should be less than the value for MinimumExecutionSeconds.
+    Type: Number
+    Default: 5
+
+  MinimumExecutionSeconds:
+    Description: The minimum number of seconds for the LongRunningFunction to execute. This should be greater than the value for TimeoutSeconds.
+    Type: Number
+    Default: 10
+
+Resources:
+  LongRunningFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: long-running-function/
+      Handler: long-running-function
+      Runtime: go1.x
+      Timeout: 30
+      Environment:
+        Variables:
+          MINIMUM_EXECUTION_SECONDS: !Ref MinimumExecutionSeconds
+
+  StatesTimeoutWorkflow:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: States-Timeout
+      RoleArn: !GetAtt StatesTimeoutRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "A Catch example of the Amazon States Language using an AWS Lambda Function",
+            "StartAt": "LongRunningFunction",
+            "States": {
+              "LongRunningFunction": {
+                "Type": "Task",
+                "Resource": "${LongRunningFunctionArn}",
+                "TimeoutSeconds": ${TimeoutSeconds},
+                "Catch": [
+                  {
+                    "ErrorEquals": [
+                      "States.Timeout"
+                    ],
+                    "Next": "TimeoutFallback"
+                  },
+                  {
+                    "ErrorEquals": [
+                      "States.ALL"
+                    ],
+                    "Next": "CatchAllFallback"
+                  }
+                ],
+                "End": true
+              },
+              "TimeoutFallback": {
+                "Type": "Pass",
+                "Result": "This is a fallback from a Task State States.Timeout exception",
+                "End": true
+              },
+              "CatchAllFallback": {
+                "Type": "Pass",
+                "Result": "This is a generic fallback from an uncaught error code",
+                "End": true
+              }
+            }
+          }
+        - {
+            "LongRunningFunctionArn": !GetAtt LongRunningFunction.Arn,
+            "TimeoutSeconds": !Ref TimeoutSeconds
+          }
+
+  StatesTimeoutRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LongRunningFunctionExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt LongRunningFunction.Arn

@@ -1,0 +1,43 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  function-native
+  
+  Sample SAM Template for function-native
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 2048
+
+Resources:
+  DoStuffFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: do-stuff/
+      Handler: do-stuff
+      Runtime: go1.x
+      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !GetAtt TestBucket.Arn
+
+  TestBucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      AccessControl: Private
+
+Outputs:
+  TestBucketName:
+    Description: S3 bucket name for testing
+    Value: !Ref TestBucket
+  DoStuffFunctionArn:
+    Description: ARN for the DoStuffFunction
+    Value: !GetAtt DoStuffFunction.Arn

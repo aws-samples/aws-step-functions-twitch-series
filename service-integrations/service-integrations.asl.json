@@ -1,0 +1,41 @@
+{
+    "Comment": "A Service Integrations demonstration",
+    "StartAt": "Write to DynamoDB",
+    "States": {
+        "Write to DynamoDB": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::dynamodb:putItem",
+        "Parameters": {
+            "TableName": "service-integration-table",
+            "Item": {
+                "id": {"S.$": "$$.Execution.Id"},
+                "Name": {"S": "María García"},
+                "Channel": {"S.$": "$.Channel"}
+            }
+        },
+        "ResultPath": "$.DynamoDB",
+        "Next": "Send Message to SQS"
+        },
+        "Send Message to SQS": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sqs:sendMessage",
+            "Parameters": {
+                "QueueUrl": "https://sqs.REGION.amazonaws.com/ACCOUNT_ID/service-integration-queue",
+                "MessageBody.$": "$.DynamoDB"
+            },
+            "ResultPath": "$.SQS",
+            "Next": "Publish to SNS"
+        },
+        "Publish to SNS": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::sns:publish",
+            "Parameters": {
+                "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:service-integration-topic",
+                "Message": {
+                    "Input": "Hello from Step Functions!"
+                }
+            },
+            "End": true
+        }
+    }
+}

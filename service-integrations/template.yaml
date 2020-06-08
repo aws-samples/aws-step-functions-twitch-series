@@ -1,0 +1,25 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  service-integrations
+  
+  Sample SAM Template for service-integrations
+
+Resources:
+  DemoTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: service-integration-table
+  
+  DemoQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: service-integration-queue
+
+  snsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: service-integration-topic

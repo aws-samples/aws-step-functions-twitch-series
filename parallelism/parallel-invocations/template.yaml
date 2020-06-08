@@ -1,0 +1,161 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  parallel-invocations
+  
+  Sample SAM Template for parallel-invocations
+
+Resources:
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: AnyCompany
+  
+  PublishEventsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: publish-events/
+      Handler: publish-events
+      Runtime: go1.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - events:PutEvents
+              Resource:
+                - !GetAtt EventBus.Arn
+  
+  ExpiredSubscriptionRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Listen on the custom event bus for SubscriptionExpired events
+      EventBusName: !Ref EventBus
+      EventPattern:
+        source:
+          - "com.anycompany"
+        detail-type:
+          - subscription-expired
+      State: ENABLED
+      Targets:
+      - Arn: !Ref ExpiredSubscriptionWorkflow
+        Id: ExpiredSubscriptionWorkflow
+        RoleArn: !GetAtt InvokeWorkflowRole.Arn
+  
+  ExpiredSubscriptionWorkflow:
+    Description: Workflow for processing expired subscriptions
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: Parallel-Invocation
+      RoleArn: !GetAtt ExpiredSubscriptionRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "Comment": "A Hello World example demonstrating various state types of the Amazon States Language",
+            "StartAt": "Process Cancellation",
+            "States": {
+              "Process Cancellation": {
+                "Type": "Parallel",
+                "ResultPath": "$.ProcessCancellationResults",
+                "Branches": [
+                  {
+                    "StartAt": "Suspend All Resources",
+                    "States": {
+                      "Suspend All Resources": {
+                        "Type": "Pass",
+                        "ResultPath": "$.SuspendResourcesResult",
+                        "End": true
+                      }
+                    }
+                  },
+                  {
+                    "StartAt": "Send Expiration Email",
+                    "States": {
+                        "Send Expiration Email": {
+                            "Type": "Pass",
+                            "ResultPath": "$.SendExpirationEmailResult",
+                            "End": true
+                        }
+                    }
+                  }
+                ],
+                "Next": "Publish to EventBridge"
+              },
+              "Publish to EventBridge": {
+                "Type": "Task",
+                "Resource": "arn:aws:states:::lambda:invoke",
+                "Parameters": {
+                  "FunctionName": "${PublishEventsFunctionArn}",
+                  "Payload": {
+                    "EventBusName": "${EventBusName}",
+                    "Source.$": "$.source",
+                    "DetailType": "expiration-processed",
+                    "Detail.$": "$.detail"
+                  }
+                },
+                "End": true
+              }
+            }
+          }
+        - {
+            EventBusName: !GetAtt EventBus.Name,
+            PublishEventsFunctionArn: !GetAtt PublishEventsFunction.Arn
+          }
+
+  ExpiredSubscriptionRole:
+    Description: IAM Role for our Expired Subscription workflow
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ExpiredSubscriptionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt PublishEventsFunction.Arn
+
+  InvokeWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeExpressWorkflowPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - states:StartExecution
+                Resource:
+                  - !Ref ExpiredSubscriptionWorkflow
+
+Outputs:
+  EventBusArn:
+    Description: "The ARN of the event bus"
+    Value: !GetAtt EventBus.Arn
+  EventBusName:
+    Description: "The name of the event bus"
+    Value: !GetAtt EventBus.Name
+  PublishEventsFunctionArn:
+    Description: "The ARN of our Lambda function"
+    Value: !GetAtt PublishEventsFunction.Arn
