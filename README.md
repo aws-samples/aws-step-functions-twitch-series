@@ -2,7 +2,7 @@
 
 This repository contains the code created during the [AWS Step Functions][step-functions] series on [Twitch][twitch]. Every Tuesday at 2pm ET/11am PT we cover a bit of functionality live, so you can create workflows that are more effective and more efficient.
 
-**Note**: All templates have been updated to reflect [AWS Serverless Application Model][sam] (AWS SAM) support for Step Functions, launched on May 2020. Wherever the templates in this repository and the video episodes differ, this repository should be considered correct.
+**Note**: All templates have been updated to reflect [AWS Serverless Application Model][sam] (AWS SAM) [support for Step Functions][sam-step-functions-support], launched on 27 May 2020. Wherever the templates in this repository and the video episodes differ, this repository should be considered correct.
 
 ## Episodes:
 
@@ -30,6 +30,7 @@ SPDX-License-Identifier: MIT-0
 
 [iam]: https://aws.amazon.com/iam/
 [sam]: https://aws.amazon.com/serverless/sam/
+[sam-step-functions-support]: https://aws.amazon.com/blogs/compute/simplifying-application-orchestration-with-aws-step-functions-and-aws-sam/
 [step-functions]: https://aws.amazon.com/step-functions/
 [twitch]: https://twitch.tv/aws/
 
