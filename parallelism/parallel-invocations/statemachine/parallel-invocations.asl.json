@@ -1,0 +1,47 @@
+{
+  "Comment": "A Hello World example demonstrating various state types of the Amazon States Language",
+  "StartAt": "Process Cancellation",
+  "States": {
+    "Process Cancellation": {
+      "Type": "Parallel",
+      "ResultPath": "$.ProcessCancellationResults",
+      "Branches": [
+        {
+          "StartAt": "Suspend All Resources",
+          "States": {
+            "Suspend All Resources": {
+              "Type": "Pass",
+              "ResultPath": "$.SuspendResourcesResult",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Send Expiration Email",
+          "States": {
+            "Send Expiration Email": {
+              "Type": "Pass",
+              "ResultPath": "$.SendExpirationEmailResult",
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Publish to EventBridge"
+    },
+    "Publish to EventBridge": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${PublishEventsFunctionArn}",
+        "Payload": {
+          "EventBusName": "${EventBusName}",
+          "Source.$": "$.source",
+          "DetailType": "expiration-processed",
+          "Detail.$": "$.detail"
+        }
+      },
+      "End": true
+    }
+  }
+}
