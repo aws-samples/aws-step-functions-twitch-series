@@ -12,71 +12,17 @@ Resources:
   JitteryFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: jittery-function/
+      CodeUri: functions/jittery-function/
       Handler: jittery-function
       Runtime: go1.x
 
-  AppLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/states/Complex-Retrier
-      RetentionInDays: 7 # optional
-
   ComplexRetrierWorkflow:
-    Type: AWS::StepFunctions::StateMachine
+    Type: AWS::Serverless::StateMachine
     Properties:
-      StateMachineName: Complex-Retrier
-      RoleArn: !GetAtt ComplexRetrierRole.Arn
-
-      DefinitionString: !Sub
-        - |-
-          {
-            "Comment": "An example of the Amazon States Language with a complex Retry block",
-            "StartAt": "Jittery Function",
-            "States": {
-              "Jittery Function": {
-                "Type": "Task",
-                "Resource": "${JitteryFunctionArn}",
-                "Retry": [
-                  {
-                    "ErrorEquals": [ "errorString" ],
-                    "IntervalSeconds": 5,
-                    "MaxAttempts": 2,
-                    "BackoffRate": 2.0
-                  },
-                  {
-                    "ErrorEquals": [ "wrapError" ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 10,
-                    "BackoffRate": 3.0
-                  }
-                ],
-                "End": true
-              }
-            }
-          }
-        - {
-            "JitteryFunctionArn": !GetAtt JitteryFunction.Arn
-          }
-
-  ComplexRetrierRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - !Sub states.${AWS::Region}.amazonaws.com
-            Action: sts:AssumeRole
+      Name: Complex-Retrier
       Policies:
-        - PolicyName: JitteryFunctionExecutionPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource:
-                  - !GetAtt JitteryFunction.Arn
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JitteryFunction
+      DefinitionUri: statemachine/complex-retrier.asl.json
+      DefinitionSubstitutions: 
+        JitteryFunctionArn: !GetAtt JitteryFunction.Arn
