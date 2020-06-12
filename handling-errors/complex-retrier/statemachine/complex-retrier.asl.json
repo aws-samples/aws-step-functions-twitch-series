@@ -7,13 +7,17 @@
       "Resource": "${JitteryFunctionArn}",
       "Retry": [
         {
-          "ErrorEquals": [ "errorString" ],
+          "ErrorEquals": [
+            "errorString"
+          ],
           "IntervalSeconds": 5,
           "MaxAttempts": 2,
           "BackoffRate": 2.0
         },
         {
-          "ErrorEquals": [ "wrapError" ],
+          "ErrorEquals": [
+            "wrapError"
+          ],
           "IntervalSeconds": 1,
           "MaxAttempts": 10,
           "BackoffRate": 3.0
