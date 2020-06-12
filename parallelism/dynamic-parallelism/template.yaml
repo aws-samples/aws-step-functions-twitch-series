@@ -1,0 +1,35 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  dynamic-parallelism
+  
+  A workflow that demonstrates dynamic parallelism (the Map State).
+
+Resources:
+################################################################################
+# AWS Step Functions state machine
+################################################################################
+  DynamicParallelismStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Dynamic-Parallelism
+      Role: !GetAtt NoOpWorkflowRole.Arn
+      DefinitionUri: statemachine/dynamic-parallelism.asl.json
+
+################################################################################
+# No-op IAM role for simple state machines
+################################################################################
+  NoOpWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
