@@ -1,0 +1,12 @@
+{
+  "Comment": "A simple Express Workflow built to always fail",
+  "StartAt": "Failing Child",
+  "States": {
+    "Failing Child": {
+      "Type": "Fail",
+      "Cause": "ERROR.CHILD_FAILURE",
+      "Comment": "This Fail state is hard-coded to demonstrate nested workflow handling",
+      "Error": "Child.Failure"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "Comment": "An example of the Amazon States Language using a parallel state to execute two branches at the same time.",
+  "StartAt": "Parallel",
+  "States": {
+    "Parallel": {
+      "Type": "Parallel",
+      "Next": "Final State",
+      "Branches": [
+        {
+          "StartAt": "Failing Child",
+          "States": {
+            "Failing Child": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::states:startExecution.sync:2",
+              "Parameters": {
+                "StateMachineArn": "${FailingChildWorkflowArn}",
+                "Name": "FailingChild",
+                "Input": {
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.TaskFailed"
+                  ],
+                  "IntervalSeconds": 20,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.TaskFailed"
+                  ],
+                  "Next": "Task Failure Fallback"
+                }
+              ],
+              "End": true
+            },
+            "Task Failure Fallback": {
+              "Type": "Pass",
+              "Parameters": {
+                "ErrorObject.$": "$",
+                "Message": "Child workflow failed; retry limit reached. See ErrorObject for additional information."
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Succeeding Child",
+          "States": {
+            "Succeeding Child": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::states:startExecution.sync:2",
+              "Parameters": {
+                "StateMachineArn": "${SucceedingChildWorkflowArn}",
+                "Name": "SucceedingChild",
+                "Input": {
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "Final State": {
+        "Type": "Pass",
+        "End": true
+    }
+  }
+}

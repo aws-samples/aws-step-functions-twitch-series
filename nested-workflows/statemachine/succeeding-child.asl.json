@@ -1,0 +1,10 @@
+{
+  "Comment": "A simple Express Workflow built to always succeed",
+  "StartAt": "Succeeding Child",
+  "States": {
+    "Succeeding Child": {
+      "Type": "Succeed",
+      "Comment": "This Succeed state is hard-coded to demonstrate nested workflow handling"
+    }
+  }
+}
