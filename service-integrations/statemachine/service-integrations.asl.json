@@ -6,7 +6,7 @@
         "Type": "Task",
         "Resource": "arn:aws:states:::dynamodb:putItem",
         "Parameters": {
-            "TableName": "service-integration-table",
+            "TableName": "${DemoTableName}",
             "Item": {
                 "id": {"S.$": "$$.Execution.Id"},
                 "Name": {"S": "María García"},
@@ -20,7 +20,7 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::sqs:sendMessage",
             "Parameters": {
-                "QueueUrl": "https://sqs.REGION.amazonaws.com/ACCOUNT_ID/service-integration-queue",
+                "QueueUrl": "${DemoQueueUrl}",
                 "MessageBody.$": "$.DynamoDB"
             },
             "ResultPath": "$.SQS",
@@ -30,11 +30,12 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::sns:publish",
             "Parameters": {
-                "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:service-integration-topic",
+                "TopicArn": "${DemoTopicArn}",
                 "Message": {
                     "Input": "Hello from Step Functions!"
                 }
             },
+            "ResultPath": "$.SNS",
             "End": true
         }
     }

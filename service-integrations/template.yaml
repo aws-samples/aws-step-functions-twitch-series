@@ -19,7 +19,24 @@ Resources:
     Properties:
       QueueName: service-integration-queue
 
-  snsTopic:
+  DemoTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: service-integration-topic
+
+  ServiceIntegrationsStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Service-Integrations
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref DemoTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt DemoQueue.QueueName
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt DemoTopic.TopicName
+      DefinitionUri: statemachine/service-integrations.asl.json
+      DefinitionSubstitutions:
+        DemoTableName: !Ref DemoTable
+        DemoQueueUrl: !Ref DemoQueue
+        DemoTopicArn: !Ref DemoTopic
