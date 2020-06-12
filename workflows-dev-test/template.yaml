@@ -14,81 +14,24 @@ Globals:
     Timeout: 5
 
 Resources:
-  IsolatorRole:
-    Type: AWS::IAM::Role
+  IsolatorStateMachine:
+    Type: AWS::Serverless::StateMachine
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - !Sub states.${AWS::Region}.amazonaws.com
-            Action: sts:AssumeRole
+      Name: Isolator
       Policies:
-        - PolicyName: BrancherExecutionPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource:
-                  - !GetAtt IsolatorFunction.Arn
-                  - !GetAtt SnapshotFunction.Arn
-
-  Isolator:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      StateMachineName: Isolator
-      RoleArn: !GetAtt IsolatorRole.Arn
-      DefinitionString: !Sub
-        - |-
-          {
-            "Comment": "An example of the Amazon States Language using a parallel state to execute two branches at the same time.",
-            "StartAt": "Parallel",
-            "States": {
-                "Parallel": {
-                    "Type": "Parallel",
-                    "Next": "Notify",
-                    "Branches": [
-                        {
-                            "StartAt": "Isolate",
-                            "States": {
-                                "Isolate": {
-                                    "Type": "Task",
-                                    "Resource": "${IsolatorFunctionArn}",
-                                    "End": true
-                                }
-                            }
-                        },
-                        {
-                            "StartAt": "Snapshot",
-                            "States": {
-                                "Snapshot": {
-                                    "Type": "Task",
-                                    "Resource": "${SnapshotFunctionArn}",
-                                    "End": true
-                                }
-                            }
-                        }
-                    ]
-                },
-                "Notify": {
-                    "Type": "Pass",
-                    "End": true
-                }
-            }
-          }
-        - {
-            IsolatorFunctionArn: !GetAtt IsolatorFunction.Arn,
-            SnapshotFunctionArn: !GetAtt SnapshotFunction.Arn
-          }
+        - LambdaInvokePolicy:
+            FunctionName: !Ref IsolatorFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref SnapshotFunction
+      DefinitionUri: statemachine/workflows-dev-test.asl.json
+      DefinitionSubstitutions:
+        IsolatorFunctionArn: !GetAtt IsolatorFunction.Arn
+        SnapshotFunctionArn: !GetAtt SnapshotFunction.Arn
 
   IsolatorFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: isolator/
+      CodeUri: functions/isolator/
       Handler: isolator
       Runtime: go1.x
       Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
@@ -96,15 +39,12 @@ Resources:
   SnapshotFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: snapshot/
+      CodeUri: functions/snapshot/
       Handler: snapshot
       Runtime: go1.x
       Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   IsolatorFunction:
     Description: "Lambda function to isolate security groups"
     Value: !GetAtt IsolatorFunction.Arn
@@ -113,4 +53,4 @@ Outputs:
     Value: !GetAtt SnapshotFunction.Arn
   IsolatorWorkflow:
     Description: "Workflow ARN"
-    Value: !Ref Isolator
+    Value: !Ref IsolatorStateMachine
