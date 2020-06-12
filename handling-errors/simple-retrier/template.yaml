@@ -16,7 +16,7 @@ Resources:
       Handler: jittery-function
       Runtime: go1.x
 
-  SimpleRetrierWorkflow:
+  SimpleRetrierStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: Simple-Retrier

@@ -14,15 +14,99 @@ Globals:
     Timeout: 5
 
 Resources:
+################################################################################
+# AWS Lambda function
+################################################################################
   JSONPathLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: jsonpath-lambda/
+      CodeUri: functions/jsonpath-lambda/
       Handler: jsonpath-lambda
       Runtime: go1.x
-      Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
 
-Outputs:
-  JSONPathLambdaFunction:
-    Description: "Lambda Function ARN"
-    Value: !GetAtt JSONPathLambdaFunction.Arn
+################################################################################
+# AWS Step Functions state machines
+################################################################################
+  ArraysStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Arrays
+      Role: !GetAtt NoOpWorkflowRole.Arn
+      DefinitionUri: statemachine/arrays.asl.json
+
+  EntireInputToLambdaStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Entire-Input-To-Lambda
+      Policies:
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JSONPathLambdaFunction
+      DefinitionUri: statemachine/entire-input-to-lambda.asl.json
+      DefinitionSubstitutions: 
+        JSONPathLambdaFunction: !GetAtt JSONPathLambdaFunction.Arn
+
+  LambdaWithResultAndOutputPathsStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Lambda-With-Result-And-Output-Paths
+      Policies:
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JSONPathLambdaFunction
+      DefinitionUri: statemachine/lambda-with-result-and-output-paths.asl.json
+      DefinitionSubstitutions: 
+        JSONPathLambdaFunction: !GetAtt JSONPathLambdaFunction.Arn
+
+  LambdaWithResultPathAndInputParameterStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Lambda-With-Result-Path-And-Input-Parameter
+      Policies:
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JSONPathLambdaFunction
+      DefinitionUri: statemachine/lambda-with-result-path-and-input-parameter.asl.json
+      DefinitionSubstitutions: 
+        JSONPathLambdaFunction: !GetAtt JSONPathLambdaFunction.Arn
+
+  LambdaWithResultPathStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Lambda-With-Result-Path
+      Policies:
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JSONPathLambdaFunction
+      DefinitionUri: statemachine/lambda-with-result-path.asl.json
+      DefinitionSubstitutions: 
+        JSONPathLambdaFunction: !GetAtt JSONPathLambdaFunction.Arn
+
+  PassStateManipulationStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Pass-State-Manipulation
+      Policies:
+        - LambdaInvokePolicy: 
+            FunctionName: !Ref JSONPathLambdaFunction
+      DefinitionUri: statemachine/pass-state-manipulation.asl.json
+      DefinitionSubstitutions: 
+        JSONPathLambdaFunction: !GetAtt JSONPathLambdaFunction.Arn
+
+  SimplePassStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Simple-Pass-State
+      Role: !GetAtt NoOpWorkflowRole.Arn
+      DefinitionUri: statemachine/simple-pass-state.asl.json
+
+################################################################################
+# No-op IAM role for simple state machines
+################################################################################
+  NoOpWorkflowRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole

@@ -11,12 +11,13 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
-                "FunctionName": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME",
+                "FunctionName": "${JSONPathLambdaFunction}",
                 "Payload": {
-                    "Input.$": "$"
+                    "name.$": "$.name"
                 }
             },
-            "ResultPath": ".lambdaOutput",
+            "ResultPath": "$.lambdaOutput",
+            "OutputPath": "$.lambdaOutput.Payload",
             "End": true
         }
     }

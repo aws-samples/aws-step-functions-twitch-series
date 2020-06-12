@@ -28,7 +28,7 @@ Resources:
         Variables:
           MINIMUM_EXECUTION_SECONDS: !Ref MinimumExecutionSeconds
 
-  StatesTimeoutWorkflow:
+  StatesTimeoutStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: States-Timeout

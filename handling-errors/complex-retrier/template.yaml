@@ -16,7 +16,7 @@ Resources:
       Handler: jittery-function
       Runtime: go1.x
 
-  ComplexRetrierWorkflow:
+  ComplexRetrierStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: Complex-Retrier
