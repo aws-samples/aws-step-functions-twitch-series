@@ -6,9 +6,9 @@
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
-                "FunctionName": "DoStuffFunctionArn_OUTPUT_FROM_SAM_TEMPLATE",
+                "FunctionName": "${DoStuffFunctionArn}",
                 "Payload": {
-                    "bucket.$": "$.bucket",
+                    "bucket": "${TestBucketName}",
                     "prefix.$": "$.prefix"
                 }
             },

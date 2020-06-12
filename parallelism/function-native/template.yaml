@@ -18,7 +18,7 @@ Resources:
   DoStuffFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: do-stuff/
+      CodeUri: functions/do-stuff/
       Handler: do-stuff
       Runtime: go1.x
       Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
@@ -34,10 +34,14 @@ Resources:
     Properties: 
       AccessControl: Private
 
-Outputs:
-  TestBucketName:
-    Description: S3 bucket name for testing
-    Value: !Ref TestBucket
-  DoStuffFunctionArn:
-    Description: ARN for the DoStuffFunction
-    Value: !GetAtt DoStuffFunction.Arn
+  FunctionNativeStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: Function-Native
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DoStuffFunction
+      DefinitionUri: statemachine/function-native.asl.json
+      DefinitionSubstitutions:
+        DoStuffFunctionArn: !GetAtt DoStuffFunction.Arn
+        TestBucketName: !Ref TestBucket
