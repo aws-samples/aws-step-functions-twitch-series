@@ -18,6 +18,7 @@ This repository contains the code created during the [AWS Step Functions][step-f
 ## Code
 
 * [CDK/](CDK) - code from the [Creating workflows with the AWS Cloud Development Kit (CDK)][cdk] episode on 05 May 2020.
+* [codebuild](codebuild) - Code from the [AWS CodeBuild][codebuild] section of the AWS Step Functions webinar on 29 July 2020.
 * [handling-errors/](handling-errors) - code from the [Handling errors][handling-errors] episode on 12 May 2020.
 * [jsonpath/](jsonpath) - code from the [JSONPath data processing][jsonpath] episode on 28 April 2020.
 * [nested-workflows/](nested-workflows) - code from the [Nested workflows][nested-workflows] episode on 19 May 2020.
