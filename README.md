@@ -36,7 +36,7 @@ SPDX-License-Identifier: MIT-0
 [twitch]: https://twitch.tv/aws/
 
 [cdk]: https://youtu.be/T9iehMn5xHw
-[codebuild]: https://youtu.be/PYeV83rQhGk?t=1170
+[codebuild]: https://youtu.be/PYeV83rQhGk?t=1171
 [handling-errors]: https://youtu.be/PyClhjMVGY8
 [jsonpath]: https://youtu.be/QpZ6IdKvOdw
 [nested-workflows]: https://youtu.be/FmLdqQMQHFs
