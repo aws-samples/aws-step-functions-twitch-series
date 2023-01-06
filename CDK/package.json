@@ -21,8 +21,8 @@
     "typescript": "~4.1.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-stepfunctions": "1.80.0",
-    "@aws-cdk/aws-stepfunctions-tasks": "1.80.0",
+    "@aws-cdk/aws-stepfunctions": "1.187.0",
+    "@aws-cdk/aws-stepfunctions-tasks": "1.187.0",
     "@aws-cdk/aws-lambda": "1.80.0",
     "@aws-cdk/aws-dynamodb": "1.80.0",
     "@aws-cdk/core": "1.80.0"
