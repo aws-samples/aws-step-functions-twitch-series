@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "aws-cdk": "1.187.0",
-    "@aws-cdk/assert": "1.80.0",
+    "@aws-cdk/assert": "1.199.0",
     "@types/jest": "^26.0.19",
     "@types/node": "14.14.16",
     "jest": "^26.6.3",
@@ -24,7 +24,7 @@
     "@aws-cdk/aws-stepfunctions": "1.187.0",
     "@aws-cdk/aws-stepfunctions-tasks": "1.187.0",
     "@aws-cdk/aws-lambda": "1.80.0",
-    "@aws-cdk/aws-dynamodb": "1.80.0",
+    "@aws-cdk/aws-dynamodb": "1.199.0",
     "@aws-cdk/core": "1.80.0"
   }
 }
